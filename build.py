@@ -282,14 +282,13 @@ def libs(clean, static, shared, skip_formatter, just_release):
 
     if PLATFORM == 'win':
         generator_static = 'Visual Studio 17 2022'
-        generator32_dynamic = 'Visual Studio 14 2015'
-        generator64_dynamic = 'Visual Studio 14 2015 Win64'
+        generator_dynamic = 'Visual Studio 17 2022'
         if static:
             build_lib('win32-static', generator_static, "Win32", static_options, just_release)
             build_lib('win64-static', generator_static, "x64", static_options, just_release)
         if shared:
-            build_lib('win32-dynamic', generator32_dynamic, None, dynamic_options, just_release)
-            build_lib('win64-dynamic', generator64_dynamic, None, dynamic_options, just_release)
+            build_lib('win32-dynamic', generator_dynamic, "Win32", dynamic_options, just_release)
+            build_lib('win64-dynamic', generator_dynamic, "x64", dynamic_options, just_release)
     elif PLATFORM == 'osx':
         if static:
             build_lib('osx-static', None, None, static_options, just_release)
