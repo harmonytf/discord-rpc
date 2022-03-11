@@ -78,11 +78,11 @@ def unity(ctx):
 
     if sys.platform.startswith('win'):
         LIBRARY_NAME = 'discord-rpc.dll'
-        BUILD_64_BASE_PATH = os.path.join(SCRIPT_PATH, 'builds', 'win64-dynamic', 'src', 'Release')
+        BUILD_64_BASE_PATH = os.path.join(SCRIPT_PATH, 'builds', 'win64-dynamic', 'src', 'RelWithDebInfo')
         UNITY_64_DLL_PATH = os.path.join(UNITY_PROJECT_PATH, 'x86_64')
         BUILDS.append({BUILD_64_BASE_PATH: UNITY_64_DLL_PATH})
 
-        BUILD_32_BASE_PATH = os.path.join(SCRIPT_PATH, 'builds', 'win32-dynamic', 'src', 'Release')
+        BUILD_32_BASE_PATH = os.path.join(SCRIPT_PATH, 'builds', 'win32-dynamic', 'src', 'RelWithDebInfo')
         UNITY_32_DLL_PATH = os.path.join(UNITY_PROJECT_PATH, 'x86')
         BUILDS.append({BUILD_32_BASE_PATH: UNITY_32_DLL_PATH})
 
@@ -127,11 +127,11 @@ def unreal(ctx):
 
     if sys.platform.startswith('win'):
         LIBRARY_NAME = 'discord-rpc.lib'
-        BUILD_64_BASE_PATH = os.path.join(SCRIPT_PATH, 'builds', 'win64-dynamic', 'src', 'Release')
+        BUILD_64_BASE_PATH = os.path.join(SCRIPT_PATH, 'builds', 'win64-dynamic', 'src', 'RelWithDebInfo')
         UNREAL_64_DLL_PATH = os.path.join(UNREAL_PROJECT_PATH, 'Source', 'ThirdParty', 'DiscordRpcLibrary', 'Win64')
         BUILDS.append({BUILD_64_BASE_PATH: UNREAL_64_DLL_PATH})
 
-        BUILD_32_BASE_PATH = os.path.join(SCRIPT_PATH, 'builds', 'win32-dynamic', 'src', 'Release')
+        BUILD_32_BASE_PATH = os.path.join(SCRIPT_PATH, 'builds', 'win32-dynamic', 'src', 'RelWithDebInfo')
         UNREAL_32_DLL_PATH = os.path.join(UNREAL_PROJECT_PATH, 'Source', 'ThirdParty', 'DiscordRpcLibrary', 'Win32')
         BUILDS.append({BUILD_32_BASE_PATH: UNREAL_32_DLL_PATH})
 
@@ -158,7 +158,7 @@ def unreal(ctx):
             shutil.copy(os.path.join(i, LIBRARY_NAME), build[i])
 
 
-def build_lib(build_name, generator, options, just_release):
+def build_lib(build_name, generator, platform, options, just_release):
     """ Create a dir under builds, run build and install in it """
     build_path = os.path.join(SCRIPT_PATH, 'builds', build_name)
     install_path = os.path.join(INSTALL_ROOT, build_name)
@@ -168,6 +168,8 @@ def build_lib(build_name, generator, options, just_release):
         initial_cmake = ['cmake', SCRIPT_PATH, '-DCMAKE_INSTALL_PREFIX=%s' % os.path.join('..', 'install', build_name)]
         if generator:
             initial_cmake.extend(['-G', generator])
+        if platform:
+            initial_cmake.extend(['-A', platform])
         for key in options:
             val = options[key]
             if type(val) is bool:
@@ -177,7 +179,7 @@ def build_lib(build_name, generator, options, just_release):
         subprocess.check_call(initial_cmake)
         if not just_release:
             subprocess.check_call(['cmake', '--build', '.', '--config', 'Debug'])
-        subprocess.check_call(['cmake', '--build', '.', '--config', 'Release', '--target', 'install'])
+        subprocess.check_call(['cmake', '--build', '.', '--config', 'RelWithDebInfo', '--target', 'install'])
 
 
 @cli.command()
@@ -279,24 +281,25 @@ def libs(clean, static, shared, skip_formatter, just_release):
         dynamic_options['WARNINGS_AS_ERRORS'] = True
 
     if PLATFORM == 'win':
-        generator32 = 'Visual Studio 14 2015'
-        generator64 = 'Visual Studio 14 2015 Win64'
+        generator_static = 'Visual Studio 17 2022'
+        generator32_dynamic = 'Visual Studio 14 2015'
+        generator64_dynamic = 'Visual Studio 14 2015 Win64'
         if static:
-            build_lib('win32-static', generator32, static_options, just_release)
-            build_lib('win64-static', generator64, static_options, just_release)
+            build_lib('win32-static', generator_static, "Win32", static_options, just_release)
+            build_lib('win64-static', generator_static, "x64", static_options, just_release)
         if shared:
-            build_lib('win32-dynamic', generator32, dynamic_options, just_release)
-            build_lib('win64-dynamic', generator64, dynamic_options, just_release)
+            build_lib('win32-dynamic', generator32_dynamic, None, dynamic_options, just_release)
+            build_lib('win64-dynamic', generator64_dynamic, None, dynamic_options, just_release)
     elif PLATFORM == 'osx':
         if static:
-            build_lib('osx-static', None, static_options, just_release)
+            build_lib('osx-static', None, None, static_options, just_release)
         if shared:
-            build_lib('osx-dynamic', None, dynamic_options, just_release)
+            build_lib('osx-dynamic', None, None, dynamic_options, just_release)
     elif PLATFORM == 'linux':
         if static:
-            build_lib('linux-static', None, static_options, just_release)
+            build_lib('linux-static', None, None, static_options, just_release)
         if shared:
-            build_lib('linux-dynamic', None, dynamic_options, just_release)
+            build_lib('linux-dynamic', None, None, dynamic_options, just_release)
 
 
 if __name__ == '__main__':

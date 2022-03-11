@@ -1,8 +1,22 @@
 # Discord RPC
 
+## Quick start
+
+### Compile on Windows
+
+In order to compile this library for Windows, launch `x64 Native Tools Command Prompt for VS 2022` and do:
+
+```ps
+python -m pip install click
+python build.py
+python build.py libs --clean --just_release
+```
+
+The ready-to-use files are under ./builds/install.
+
 ## Deprecation Notice
 
-This library has been deprecated in favor of Discord's GameSDK. [Learn more here](https://discordapp.com/developers/docs/game-sdk/sdk-starter-guide)
+Discord claims this library has been deprecated in favor of their inferior GameSDK. [Learn more here](https://discordapp.com/developers/docs/game-sdk/sdk-starter-guide)
 
 ---
 
