@@ -397,6 +397,36 @@ extern "C" DISCORD_EXPORT void Discord_Respond(const char* userId, /* DISCORD_RE
     }
 }
 
+extern "C" DISCORD_EXPORT void Discord_OpenActivityInvite(int8_t type)
+{
+    // if we are not connected, let's not batch up stale messages for later
+    if (!Connection || !Connection->IsOpen()) {
+        return;
+    }
+    auto qmessage = SendQueue.GetNextAddMessage();
+    if (qmessage) {
+        qmessage->length = JsonWriteOpenOverlayActivityInvite(
+          qmessage->buffer, sizeof(qmessage->buffer), type, Nonce++, Pid);
+        SendQueue.CommitAdd();
+        SignalIOActivity();
+    }
+}
+
+extern "C" DISCORD_EXPORT void Discord_OpenGuildInvite(const char* code)
+{
+    // if we are not connected, let's not batch up stale messages for later
+    if (!Connection || !Connection->IsOpen()) {
+        return;
+    }
+    auto qmessage = SendQueue.GetNextAddMessage();
+    if (qmessage) {
+        qmessage->length =
+          JsonWriteOpenOverlayGuildInvite(qmessage->buffer, sizeof(qmessage->buffer), code, Nonce++, Pid);
+        SendQueue.CommitAdd();
+        SignalIOActivity();
+    }
+}
+
 extern "C" DISCORD_EXPORT void Discord_RunCallbacks(void)
 {
     // Note on some weirdness: internally we might connect, get other signals, disconnect any number

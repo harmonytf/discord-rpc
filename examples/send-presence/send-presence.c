@@ -14,7 +14,8 @@
 static const char* APPLICATION_ID = "345229890980937739";
 static int FrustrationLevel = 0;
 static int64_t StartTime;
-static int SendPresence = 1;
+static char SendPresence = 1;
+static char SendButtons = 0;
 
 static int prompt(char* line, size_t size)
 {
@@ -52,6 +53,15 @@ static void updateDiscordPresence()
         discordPresence.joinSecret = "join";
         discordPresence.spectateSecret = "look";
         discordPresence.instance = 0;
+
+        DiscordButton buttons[] = {
+            {.label = "Test", .url = "https://example.com"},
+            {.label = "Test 2", .url = "https://discord.gg/fortnite"},
+        };
+
+        if (SendButtons)
+            discordPresence.buttons = buttons;
+
         Discord_UpdatePresence(&discordPresence);
     }
     else {
@@ -153,6 +163,12 @@ static void gameLoop()
                 continue;
             }
 
+            if (line[0] == 'y') {
+                printf("Reinit Discord.\n");
+                discordInit();
+                continue;
+            }
+
             if (line[0] == 'c') {
                 if (SendPresence) {
                     printf("Clearing presence information.\n");
@@ -166,10 +182,43 @@ static void gameLoop()
                 continue;
             }
 
-            if (line[0] == 'y') {
-                printf("Reinit Discord.\n");
-                discordInit();
+            if (line[0] == 'b') {
+                if (SendButtons) {
+                    printf("Removing buttons.\n");
+                    SendButtons = 0;
+                }
+                else {
+                    printf("Adding buttons.\n");
+                    SendButtons = 1;
+                }
+                updateDiscordPresence();
                 continue;
+            }
+            
+            if (line[0] == 'i' && line[1]) {
+                if (line[1] == 'a') {
+                    printf("Opening activity invite (type 1).\n");
+                    Discord_OpenActivityInvite(1);
+                    continue;
+                }
+                
+                if (line[1] == '2') { // does not seem to work
+                    printf("Opening activity invite (type 2).\n");
+                    Discord_OpenActivityInvite(2);
+                    continue;
+                }
+                
+                if (line[1] == '0') { // does not seem to work either...
+                    printf("Opening activity invite (type 0).\n");
+                    Discord_OpenActivityInvite(0);
+                    continue;
+                }
+
+                if (line[1] == 'g') {
+                    printf("Opening guild invite.\n");
+                    Discord_OpenGuildInvite("fortnite");
+                    continue;
+                }
             }
 
             if (time(NULL) & 1) {

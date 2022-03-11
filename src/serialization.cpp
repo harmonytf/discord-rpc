@@ -149,17 +149,41 @@ size_t JsonWriteRichPresenceObj(char* dest,
                     }
                 }
 
-                if ((presence->matchSecret && presence->matchSecret[0]) ||
-                    (presence->joinSecret && presence->joinSecret[0]) ||
-                    (presence->spectateSecret && presence->spectateSecret[0])) {
-                    WriteObject secrets(writer, "secrets");
-                    WriteOptionalString(writer, "match", presence->matchSecret);
-                    WriteOptionalString(writer, "join", presence->joinSecret);
-                    WriteOptionalString(writer, "spectate", presence->spectateSecret);
+                // Send secrets only when buttons aren't set
+                if (!presence->buttons) {
+                    if ((presence->matchSecret && presence->matchSecret[0]) ||
+                        (presence->joinSecret && presence->joinSecret[0]) ||
+                        (presence->spectateSecret && presence->spectateSecret[0])) {
+                        WriteObject secrets(writer, "secrets");
+                        WriteOptionalString(writer, "match", presence->matchSecret);
+                        WriteOptionalString(writer, "join", presence->joinSecret);
+                        WriteOptionalString(writer, "spectate", presence->spectateSecret);
+                    }
                 }
 
                 writer.Key("instance");
                 writer.Bool(presence->instance != 0);
+
+                if (presence->buttons) {
+                    const auto btns = presence->buttons;
+                    WriteArray buttons(writer, "buttons");
+
+                    if (btns[0].label[0]) {
+                        WriteObject button0(writer);
+                        WriteKey(writer, "url");
+                        writer.String(btns[0].url);
+                        WriteKey(writer, "label");
+                        writer.String(btns[0].label);
+                    }
+
+                    if (btns[1].label[0]) {
+                        WriteObject button1(writer);
+                        WriteKey(writer, "url");
+                        writer.String(btns[1].url);
+                        WriteKey(writer, "label");
+                        writer.String(btns[1].label);
+                    }
+                }
             }
         }
     }
@@ -241,6 +265,69 @@ size_t JsonWriteJoinReply(char* dest, size_t maxLen, const char* userId, int rep
 
             WriteKey(writer, "user_id");
             writer.String(userId);
+        }
+
+        JsonWriteNonce(writer, nonce);
+    }
+
+    return writer.Size();
+}
+
+size_t JsonWriteOpenOverlayActivityInvite(char* dest,
+                                          size_t maxLen,
+                                          int8_t type,
+                                          int nonce,
+                                          int pid)
+{
+    JsonWriter writer(dest, maxLen);
+
+    {
+        WriteObject obj(writer);
+
+        WriteKey(writer, "cmd");
+        writer.String("OPEN_OVERLAY_ACTIVITY_INVITE");
+
+        WriteKey(writer, "args");
+        {
+            WriteObject args(writer);
+
+            WriteKey(writer, "type");
+            writer.Int(type);
+
+            // just to make sure?
+            WriteKey(writer, "pid");
+            writer.Int(pid);
+        }
+
+        JsonWriteNonce(writer, nonce);
+    }
+
+    return writer.Size();
+}
+
+size_t JsonWriteOpenOverlayGuildInvite(char* dest,
+                                       size_t maxLen,
+                                       const char* code,
+                                       int nonce,
+                                       int pid)
+{
+    JsonWriter writer(dest, maxLen);
+
+    {
+        WriteObject obj(writer);
+
+        WriteKey(writer, "cmd");
+        writer.String("OPEN_OVERLAY_GUILD_INVITE");
+
+        WriteKey(writer, "args");
+        {
+            WriteObject args(writer);
+
+            WriteKey(writer, "code");
+            writer.String(code);
+
+            WriteKey(writer, "pid");
+            writer.Int(pid);
         }
 
         JsonWriteNonce(writer, nonce);

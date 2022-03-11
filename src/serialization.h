@@ -51,6 +51,18 @@ size_t JsonWriteUnsubscribeCommand(char* dest, size_t maxLen, int nonce, const c
 
 size_t JsonWriteJoinReply(char* dest, size_t maxLen, const char* userId, int reply, int nonce);
 
+size_t JsonWriteOpenOverlayActivityInvite(char* dest,
+                                          size_t maxLen,
+                                          int8_t type,
+                                          int nonce,
+                                          int pid);
+
+size_t JsonWriteOpenOverlayGuildInvite(char* dest,
+                                       size_t maxLen,
+                                       const char* code,
+                                       int nonce,
+                                       int pid);
+
 // I want to use as few allocations as I can get away with, and to do that with RapidJson, you need
 // to supply some of your own allocators for stuff rather than use the defaults
 
