@@ -61,8 +61,8 @@ def cli(ctx, clean):
     """ click wrapper for command line stuff """
     if ctx.invoked_subcommand is None:
         ctx.invoke(libs, clean=clean)
-        if IS_BUILD_MACHINE:
-            ctx.invoke(sign)
+        #if IS_BUILD_MACHINE:
+        #    ctx.invoke(sign)
         ctx.invoke(archive)
 
 
