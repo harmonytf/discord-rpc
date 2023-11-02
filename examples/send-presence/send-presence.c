@@ -16,6 +16,7 @@ static int FrustrationLevel = 0;
 static int64_t StartTime;
 static char SendPresence = 1;
 static char SendButtons = 0;
+static char Debug = 1;
 
 static int prompt(char* line, size_t size)
 {
@@ -132,16 +133,46 @@ static void handleDiscordJoinRequest(const DiscordUser* request)
     }
 }
 
+static void handleDebug(char isOut, const char* opcodeName, const char* message, uint32_t messageLength)
+{
+    unsigned int len = max(messageLength, 7u) + 6 + 7 + 7 + 1;
+    char* message = (char*)malloc(len);
+    char* direction = isOut ? "send" : "receive";
+    if (messageLength || !message || !message[0]) {
+        sprintf_s(message, len, "[%s] [%s] <empty>", direction, opcodeName);
+    }
+    else {
+        int written = sprintf_s(message, len, "[%s] [%s] ", direction, opcodeName);
+        strncpy_s(message + written, len - written, message, messageLength);
+    }
+    printf("[DEBUG] %s\n", message);
+    free(message);
+}
+
+static void populateHandlers(DiscordEventHandlers* handlers)
+{
+    memset(handlers, 0, sizeof(handlers));
+    handlers->ready = handleDiscordReady;
+    handlers->disconnected = handleDiscordDisconnected;
+    handlers->errored = handleDiscordError;
+    handlers->joinGame = handleDiscordJoin;
+    handlers->spectateGame = handleDiscordSpectate;
+    handlers->joinRequest = handleDiscordJoinRequest;
+    if (Debug)
+        handlers->debug = handleDebug;
+}
+
+static void discordUpdateHandlers()
+{
+    DiscordEventHandlers handlers;
+    populateHandlers(&handlers);
+    Discord_UpdateHandlers(&handlers);
+}
+
 static void discordInit()
 {
     DiscordEventHandlers handlers;
-    memset(&handlers, 0, sizeof(handlers));
-    handlers.ready = handleDiscordReady;
-    handlers.disconnected = handleDiscordDisconnected;
-    handlers.errored = handleDiscordError;
-    handlers.joinGame = handleDiscordJoin;
-    handlers.spectateGame = handleDiscordSpectate;
-    handlers.joinRequest = handleDiscordJoinRequest;
+    populateHandlers(&handlers);
     Discord_Initialize(APPLICATION_ID, &handlers, 1, NULL);
 }
 
@@ -223,6 +254,13 @@ static void gameLoop()
                 }
             }
 
+            if (line[0] == 'd') {
+                printf("Turning debug %s\n", Debug ? "off" : "on");
+                Debug = !Debug;
+                discordUpdateHandlers();
+                continue;
+            }
+
             if (time(NULL) & 1) {
                 printf("I don't understand that.\n");
             }
@@ -249,6 +287,8 @@ static void gameLoop()
 int main(int argc, char* argv[])
 {
     discordInit();
+
+    updateDiscordPresence();
 
     gameLoop();
 

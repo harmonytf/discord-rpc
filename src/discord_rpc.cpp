@@ -6,6 +6,8 @@
 #include "rpc_connection.h"
 #include "serialization.h"
 
+#include <stdio.h>
+
 #include <atomic>
 #include <chrono>
 #include <mutex>
@@ -343,6 +345,29 @@ extern "C" DISCORD_EXPORT void Discord_Initialize(const char* applicationId,
         WasJustDisconnected.exchange(true);
         UpdateReconnectTime();
     };
+    Connection->onDebug = [](bool out, RpcConnection::MessageFrame* frame) {
+        if (Handlers.debug) {
+            char* opcode = "Unknown";
+            switch (frame->opcode) {
+            case RpcConnection::Opcode::Handshake:
+                opcode = "Handshake";
+                break;
+            case RpcConnection::Opcode::Frame:
+                opcode = "Frame";
+                break;
+            case RpcConnection::Opcode::Close:
+                opcode = "Close";
+                break;
+            case RpcConnection::Opcode::Ping:
+                opcode = "Ping";
+                break;
+            case RpcConnection::Opcode::Pong:
+                opcode = "Pong";
+                break;
+            }
+            Handlers.debug(out, opcode, frame->message, frame->length);
+        }
+    };
 
     IoThread->Start();
 }
@@ -521,6 +546,8 @@ extern "C" DISCORD_EXPORT void Discord_UpdateHandlers(DiscordEventHandlers* newH
         HANDLE_EVENT_REGISTRATION(joinGame, "ACTIVITY_JOIN")
         HANDLE_EVENT_REGISTRATION(spectateGame, "ACTIVITY_SPECTATE")
         HANDLE_EVENT_REGISTRATION(joinRequest, "ACTIVITY_JOIN_REQUEST")
+        RegisterForEvent("ACTIVITY_INVITE");
+        // HANDLE_EVENT_REGISTRATION(invited, "ACTIVITY_INVITE")
 
 #undef HANDLE_EVENT_REGISTRATION
 
