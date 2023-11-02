@@ -57,11 +57,11 @@ static void updateDiscordPresence()
         DiscordButton buttons[] = {
             {.label = "Test", .url = "https://example.com"},
             {.label = "Test 2", .url = "https://discord.gg/fortnite"},
+            {0, 0},
         };
 
         if (SendButtons) {
             discordPresence.buttons = buttons;
-            discordPresence.numButtons = sizeof(buttons) / sizeof(DiscordButton);
         }
 
         Discord_UpdatePresence(&discordPresence);

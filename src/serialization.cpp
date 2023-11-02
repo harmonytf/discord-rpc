@@ -164,16 +164,14 @@ size_t JsonWriteRichPresenceObj(char* dest,
                 writer.Key("instance");
                 writer.Bool(presence->instance != 0);
 
-                if (presence->buttons && presence->numButtons > 0) {
-                    const auto btns = presence->buttons;
+                if (presence->buttons) {
                     WriteArray buttons(writer, "buttons");
 
-                    for (uint8_t i = 0; i < presence->numButtons; i++) {
-
+                    for (uint8_t i = 0; true; i++) {
                         const DiscordButton& btn = presence->buttons[i];
 
                         if (!btn.label || !btn.label[0])
-                            continue;
+                            break;
 
                         WriteObject button(writer);
                         WriteKey(writer, "url");
