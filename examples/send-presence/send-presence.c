@@ -55,9 +55,9 @@ static void updateDiscordPresence()
         discordPresence.instance = 0;
 
         DiscordButton buttons[] = {
-            {.label = "Test", .url = "https://example.com"},
-            {.label = "Test 2", .url = "https://discord.gg/fortnite"},
-            {0, 0},
+          {.label = "Test", .url = "https://example.com"},
+          {.label = "Test 2", .url = "https://discord.gg/fortnite"},
+          {0, 0},
         };
 
         if (SendButtons) {
@@ -196,20 +196,20 @@ static void gameLoop()
                 updateDiscordPresence();
                 continue;
             }
-            
+
             if (line[0] == 'i' && line[1]) {
                 if (line[1] == 'a') {
                     printf("Opening activity invite (type 1).\n");
                     Discord_OpenActivityInvite(1);
                     continue;
                 }
-                
+
                 if (line[1] == '2') { // does not seem to work
                     printf("Opening activity invite (type 2).\n");
                     Discord_OpenActivityInvite(2);
                     continue;
                 }
-                
+
                 if (line[1] == '0') { // does not seem to work either...
                     printf("Opening activity invite (type 0).\n");
                     Discord_OpenActivityInvite(0);

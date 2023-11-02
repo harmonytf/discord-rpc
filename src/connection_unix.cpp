@@ -76,8 +76,11 @@ bool BaseConnection::Open()
 
     for (const auto& basePath : basePaths) {
         for (int pipeNum = 0; pipeNum < 10; ++pipeNum) {
-            snprintf(
-              PipeAddr.sun_path, sizeof(PipeAddr.sun_path), "%s/discord-ipc-%d", basePath.c_str(), pipeNum);
+            snprintf(PipeAddr.sun_path,
+                     sizeof(PipeAddr.sun_path),
+                     "%s/discord-ipc-%d",
+                     basePath.c_str(),
+                     pipeNum);
             int err = connect(self->sock, (const sockaddr*)&PipeAddr, sizeof(PipeAddr));
             if (err == 0) {
                 self->isOpen = true;

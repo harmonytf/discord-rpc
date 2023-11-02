@@ -420,8 +420,8 @@ extern "C" DISCORD_EXPORT void Discord_OpenGuildInvite(const char* code)
     }
     auto qmessage = SendQueue.GetNextAddMessage();
     if (qmessage) {
-        qmessage->length =
-          JsonWriteOpenOverlayGuildInvite(qmessage->buffer, sizeof(qmessage->buffer), code, Nonce++, Pid);
+        qmessage->length = JsonWriteOpenOverlayGuildInvite(
+          qmessage->buffer, sizeof(qmessage->buffer), code, Nonce++, Pid);
         SendQueue.CommitAdd();
         SignalIOActivity();
     }
