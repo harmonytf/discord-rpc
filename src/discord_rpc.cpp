@@ -347,7 +347,7 @@ extern "C" DISCORD_EXPORT void Discord_Initialize(const char* applicationId,
     };
     Connection->onDebug = [](bool out, RpcConnection::MessageFrame* frame) {
         if (Handlers.debug) {
-            char* opcode = "Unknown";
+            const char* opcode = "Unknown";
             switch (frame->opcode) {
             case RpcConnection::Opcode::Handshake:
                 opcode = "Handshake";
