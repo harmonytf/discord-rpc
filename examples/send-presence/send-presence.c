@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -133,20 +134,23 @@ static void handleDiscordJoinRequest(const DiscordUser* request)
     }
 }
 
-static void handleDebug(char isOut, const char* opcodeName, const char* message, uint32_t messageLength)
+static void handleDebug(char isOut,
+                        const char* opcodeName,
+                        const char* message,
+                        uint32_t messageLength)
 {
-    unsigned int len = max(messageLength, 7u) + 6 + 7 + 7 + 1;
-    char* message = (char*)malloc(len);
+    unsigned int len = (messageLength > 7 ? messageLength : 7) + 6 + 7 + 7 + 1;
+    char* buf = (char*)malloc(len);
     char* direction = isOut ? "send" : "receive";
     if (messageLength || !message || !message[0]) {
-        sprintf_s(message, len, "[%s] [%s] <empty>", direction, opcodeName);
+        sprintf_s(buf, len, "[%s] [%s] <empty>", direction, opcodeName);
     }
     else {
-        int written = sprintf_s(message, len, "[%s] [%s] ", direction, opcodeName);
-        strncpy_s(message + written, len - written, message, messageLength);
+        int written = sprintf_s(buf, len, "[%s] [%s] ", direction, opcodeName);
+        strncpy_s(buf + written, len - written, message, messageLength);
     }
-    printf("[DEBUG] %s\n", message);
-    free(message);
+    printf("[DEBUG] %s\n", buf);
+    free(buf);
 }
 
 static void populateHandlers(DiscordEventHandlers* handlers)
