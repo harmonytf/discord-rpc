@@ -59,8 +59,10 @@ static void updateDiscordPresence()
             {.label = "Test 2", .url = "https://discord.gg/fortnite"},
         };
 
-        if (SendButtons)
+        if (SendButtons) {
             discordPresence.buttons = buttons;
+            discordPresence.numButtons = sizeof(buttons) / sizeof(DiscordButton);
+        }
 
         Discord_UpdatePresence(&discordPresence);
     }
