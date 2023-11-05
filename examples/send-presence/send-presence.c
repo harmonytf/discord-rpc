@@ -109,11 +109,13 @@ static void handleDebug(char isOut,
     char* buf = (char*)malloc(len);
     char* direction = isOut ? "send" : "receive";
     if (!messageLength || !message || !message[0]) {
-        sprintf_s(buf, len, "[%s] [%s] <empty>", direction, opcodeName);
+        snprintf(buf, len, "[%s] [%s] <empty>", direction, opcodeName);
     }
     else {
-        int written = sprintf_s(buf, len, "[%s] [%s] ", direction, opcodeName);
-        strncpy_s(buf + written, len - written, message, messageLength);
+        int written = snprintf(buf, len, "[%s] [%s] ", direction, opcodeName);
+        int remaining = len - written;
+        int toWrite = remaining > (messageLength + 1) ? (messageLength + 1) : remaining;
+        int written2 = snprintf(buf + written, toWrite, message);
     }
     printf("[DEBUG] %s\n", buf);
     free(buf);
