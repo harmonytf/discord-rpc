@@ -151,7 +151,7 @@ static void handleDebug(char isOut,
     unsigned int len = (messageLength > 7 ? messageLength : 7) + 6 + 7 + 7 + 1;
     char* buf = (char*)malloc(len);
     char* direction = isOut ? "send" : "receive";
-    if (messageLength || !message || !message[0]) {
+    if (!messageLength || !message || !message[0]) {
         sprintf_s(buf, len, "[%s] [%s] <empty>", direction, opcodeName);
     }
     else {
