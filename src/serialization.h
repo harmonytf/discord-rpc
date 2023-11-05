@@ -63,6 +63,15 @@ size_t JsonWriteUnsubscribeCommand(char* dest, size_t maxLen, int nonce, const c
 
 size_t JsonWriteJoinReply(char* dest, size_t maxLen, const char* userId, int reply, int nonce);
 
+size_t JsonWriteAcceptInvite(char* dest,
+                             size_t maxLen,
+                             const char* userId,
+                             /* DISCORD_ACTIVITY_ACTION_TYPE_ */ int8_t type,
+                             const char* sessionId,
+                             const char* channelId,
+                             const char* messageId,
+                             int nonce);
+
 size_t JsonWriteOpenOverlayActivityInvite(char* dest,
                                           size_t maxLen,
                                           int8_t type,
@@ -202,6 +211,7 @@ public:
 };
 
 using JsonValue = rapidjson::GenericValue<UTF8, PoolAllocator>;
+using JsonArray = rapidjson::GenericArray<false, JsonValue>;
 
 inline JsonValue* GetObjMember(JsonValue* obj, const char* name)
 {
@@ -214,12 +224,34 @@ inline JsonValue* GetObjMember(JsonValue* obj, const char* name)
     return nullptr;
 }
 
+inline JsonArray* GetArrMember(JsonValue* obj, const char* name)
+{
+    if (obj) {
+        auto member = obj->FindMember(name);
+        if (member != obj->MemberEnd() && member->value.IsArray()) {
+            return &member->value.GetArray();
+        }
+    }
+    return nullptr;
+}
+
 inline int GetIntMember(JsonValue* obj, const char* name, int notFoundDefault = 0)
 {
     if (obj) {
         auto member = obj->FindMember(name);
         if (member != obj->MemberEnd() && member->value.IsInt()) {
             return member->value.GetInt();
+        }
+    }
+    return notFoundDefault;
+}
+
+inline int64_t GetInt64Member(JsonValue* obj, const char* name, int notFoundDefault = 0)
+{
+    if (obj) {
+        auto member = obj->FindMember(name);
+        if (member != obj->MemberEnd() && member->value.IsInt()) {
+            return member->value.GetInt64();
         }
     }
     return notFoundDefault;

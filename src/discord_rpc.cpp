@@ -20,6 +20,7 @@
 constexpr size_t MaxMessageSize{16 * 1024};
 constexpr size_t MessageQueueSize{8};
 constexpr size_t JoinQueueSize{8};
+constexpr size_t InviteQueueSize{8};
 
 struct QueuedMessage {
     size_t length;
@@ -51,6 +52,36 @@ struct User {
     // Rounded way up because I'm paranoid about games breaking from future changes in these sizes
 };
 
+struct Activity {
+    char state[128];
+    char details[128];
+    int64_t startTimestamp;
+    int64_t endTimestamp;
+    char largeImageKey[32];
+    char largeImageText[128];
+    char smallImageKey[32];
+    char smallImageText[128];
+    char partyId[128];
+    int partySize;
+    int partyMax;
+
+    int partyPrivacy;
+    char matchSecret[128];
+    char joinSecret[128];
+    char spectateSecret[128];
+    int8_t instance;
+    const DiscordButton* buttons;
+};
+
+struct Invite {
+    User user;
+    Activity activity;
+    /* DISCORD_ACTIVITY_ACTION_TYPE_ */ int8_t type;
+    char sessionId[128];
+    char channelId[128];
+    char messageId[128];
+};
+
 static RpcConnection* Connection{nullptr};
 static DiscordEventHandlers QueuedHandlers{};
 static DiscordEventHandlers Handlers{};
@@ -71,6 +102,7 @@ static std::mutex HandlerMutex;
 static QueuedMessage QueuedPresence{};
 static MsgQueue<QueuedMessage, MessageQueueSize> SendQueue;
 static MsgQueue<User, JoinQueueSize> JoinAskQueue;
+static MsgQueue<Invite, InviteQueueSize> InviteQueue;
 static User connectedUser;
 
 // We want to auto connect, and retry on failure, but not as fast as possible. This does expoential
@@ -207,6 +239,71 @@ static void Discord_UpdateConnection(void)
                         StringCopyOptional(joinReq->globalName, GetStrMember(user, "global_name"));
                         StringCopyOptional(joinReq->avatar, GetStrMember(user, "avatar"));
                         JoinAskQueue.CommitAdd();
+                    }
+                }
+                else if (strcmp(evtName, "ACTIVITY_INVITE") == 0) {
+                    auto inviteReq = InviteQueue.GetNextAddMessage();
+                    if (inviteReq) {
+                        auto user = GetObjMember(data, "user");
+                        auto userId = GetStrMember(user, "id");
+                        auto username = GetStrMember(user, "username");
+                        if (userId && username) {
+                            StringCopy(inviteReq->user.userId, userId);
+                            StringCopy(inviteReq->user.username, username);
+                            StringCopyOptional(inviteReq->user.discriminator,
+                                               GetStrMember(user, "discriminator"));
+                            StringCopyOptional(inviteReq->user.globalName,
+                                               GetStrMember(user, "global_name"));
+                            StringCopyOptional(inviteReq->user.avatar,
+                                               GetStrMember(user, "avatar"));
+                        }
+                        auto activity = GetObjMember(data, "activity");
+                        if (activity) {
+                            StringCopyOptional(inviteReq->activity.state,
+                                               GetStrMember(activity, "state"));
+                            StringCopyOptional(inviteReq->activity.details,
+                                               GetStrMember(activity, "details"));
+                            auto timestamps = GetObjMember(activity, "timestamps");
+                            if (timestamps) {
+                                inviteReq->activity.startTimestamp =
+                                  GetInt64Member(timestamps, "start");
+                                inviteReq->activity.endTimestamp =
+                                  GetInt64Member(timestamps, "end");
+                            }
+                            auto assets = GetObjMember(activity, "assets");
+                            if (assets) {
+                                StringCopyOptional(inviteReq->activity.largeImageKey,
+                                                   GetStrMember(assets, "large_image"));
+                                StringCopyOptional(inviteReq->activity.largeImageText,
+                                                   GetStrMember(assets, "large_text"));
+                                StringCopyOptional(inviteReq->activity.smallImageKey,
+                                                   GetStrMember(assets, "small_image"));
+                                StringCopyOptional(inviteReq->activity.smallImageText,
+                                                   GetStrMember(assets, "small_text"));
+                            }
+                            auto party = GetObjMember(activity, "party");
+                            if (party) {
+                                StringCopyOptional(inviteReq->activity.partyId,
+                                                   GetStrMember(party, "id"));
+                                auto size = GetArrMember(party, "size");
+                                if (size->Size() >= 1) {
+                                    auto& size0 = (*size)[0];
+                                    if (size0.IsInt()) {
+                                        inviteReq->activity.partySize = size0.GetInt();
+                                    }
+                                }
+                                if (size->Size() >= 2) {
+                                    auto& size1 = (*size)[1];
+                                    if (size1.IsInt()) {
+                                        inviteReq->activity.partyMax = size1.GetInt();
+                                    }
+                                }
+                            }
+                        }
+                        inviteReq->type = GetIntMember(data, "type");
+                        StringCopyOptional(inviteReq->channelId, GetStrMember(user, "channel_id"));
+                        StringCopyOptional(inviteReq->messageId, GetStrMember(user, "message_id"));
+                        InviteQueue.CommitAdd();
                     }
                 }
             }
@@ -410,6 +507,31 @@ extern "C" DISCORD_EXPORT void Discord_Respond(const char* userId, /* DISCORD_RE
     }
 }
 
+extern "C" DISCORD_EXPORT void Discord_AcceptInvite(const char* userId,
+                                                    /* DISCORD_ACTIVITY_ACTION_TYPE_ */ int8_t type,
+                                                    const char* sessionId,
+                                                    const char* channelId,
+                                                    const char* messageId)
+{
+    // if we are not connected, let's not batch up stale messages for later
+    if (!Connection || !Connection->IsOpen()) {
+        return;
+    }
+    auto qmessage = SendQueue.GetNextAddMessage();
+    if (qmessage) {
+        qmessage->length = JsonWriteAcceptInvite(qmessage->buffer,
+                                                 sizeof(qmessage->buffer),
+                                                 userId,
+                                                 type,
+                                                 sessionId,
+                                                 channelId,
+                                                 messageId,
+                                                 Nonce++);
+        SendQueue.CommitAdd();
+        SignalIOActivity();
+    }
+}
+
 extern "C" DISCORD_EXPORT void Discord_OpenActivityInvite(int8_t type)
 {
     // if we are not connected, let's not batch up stale messages for later
@@ -512,6 +634,32 @@ extern "C" DISCORD_EXPORT void Discord_RunCallbacks(void)
         JoinAskQueue.CommitSend();
     }
 
+    while (InviteQueue.HavePendingSends()) {
+        auto req = InviteQueue.GetNextSendMessage();
+        {
+            std::lock_guard<std::mutex> guard(HandlerMutex);
+            if (Handlers.invited) {
+                auto& u = req->user;
+                DiscordUser du{u.userId, u.username, u.discriminator, u.globalName, u.avatar};
+                auto& a = req->activity;
+                DiscordRichPresence drp{a.state,
+                                        a.details,
+                                        a.startTimestamp,
+                                        a.endTimestamp,
+                                        a.largeImageKey,
+                                        a.largeImageText,
+                                        a.smallImageKey,
+                                        a.smallImageText,
+                                        a.partyId,
+                                        a.partySize,
+                                        a.partyMax};
+                Handlers.invited(
+                  req->type, &du, &drp, req->sessionId, req->channelId, req->messageId);
+            }
+        }
+        InviteQueue.CommitSend();
+    }
+
     if (!isConnected) {
         // if we are not connected, disconnect message last
         std::lock_guard<std::mutex> guard(HandlerMutex);
@@ -536,8 +684,7 @@ extern "C" DISCORD_EXPORT void Discord_UpdateHandlers(DiscordEventHandlers* newH
         HANDLE_EVENT_REGISTRATION(joinGame, "ACTIVITY_JOIN")
         HANDLE_EVENT_REGISTRATION(spectateGame, "ACTIVITY_SPECTATE")
         HANDLE_EVENT_REGISTRATION(joinRequest, "ACTIVITY_JOIN_REQUEST")
-        RegisterForEvent("ACTIVITY_INVITE");
-        // HANDLE_EVENT_REGISTRATION(invited, "ACTIVITY_INVITE")
+        HANDLE_EVENT_REGISTRATION(invited, "ACTIVITY_INVITE")
 
 #undef HANDLE_EVENT_REGISTRATION
 

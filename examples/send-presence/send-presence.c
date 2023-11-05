@@ -100,6 +100,25 @@ static void handleDiscordError(int errcode, const char* message)
     printf("\nDiscord: error (%d: %s)\n", errcode, message);
 }
 
+static void handleDebug(char isOut,
+                        const char* opcodeName,
+                        const char* message,
+                        uint32_t messageLength)
+{
+    unsigned int len = (messageLength > 7 ? messageLength : 7) + 6 + 7 + 7 + 1;
+    char* buf = (char*)malloc(len);
+    char* direction = isOut ? "send" : "receive";
+    if (!messageLength || !message || !message[0]) {
+        sprintf_s(buf, len, "[%s] [%s] <empty>", direction, opcodeName);
+    }
+    else {
+        int written = sprintf_s(buf, len, "[%s] [%s] ", direction, opcodeName);
+        strncpy_s(buf + written, len - written, message, messageLength);
+    }
+    printf("[DEBUG] %s\n", buf);
+    free(buf);
+}
+
 static void handleDiscordJoin(const char* secret)
 {
     printf("\nDiscord: join (%s)\n", secret);
@@ -143,23 +162,23 @@ static void handleDiscordJoinRequest(const DiscordUser* request)
     }
 }
 
-static void handleDebug(char isOut,
-                        const char* opcodeName,
-                        const char* message,
-                        uint32_t messageLength)
+static void handleDiscordInvited(/* DISCORD_ACTIVITY_ACTION_TYPE_ */ int8_t type,
+                                 const DiscordUser* user,
+                                 const DiscordRichPresence* activity,
+                                 const char* sessionId,
+                                 const char* channelId,
+                                 const char* messageId)
 {
-    unsigned int len = (messageLength > 7 ? messageLength : 7) + 6 + 7 + 7 + 1;
-    char* buf = (char*)malloc(len);
-    char* direction = isOut ? "send" : "receive";
-    if (!messageLength || !message || !message[0]) {
-        sprintf_s(buf, len, "[%s] [%s] <empty>", direction, opcodeName);
-    }
-    else {
-        int written = sprintf_s(buf, len, "[%s] [%s] ", direction, opcodeName);
-        strncpy_s(buf + written, len - written, message, messageLength);
-    }
-    printf("[DEBUG] %s\n", buf);
-    free(buf);
+    printf("Received invite type: %i, from user: %s, with activity state: %s, with session id: %s, "
+           "from channel id: %s, with message id: %s",
+           type,
+           user->username,
+           activity->state,
+           sessionId,
+           channelId,
+           messageId);
+
+    // Discord_AcceptInvite(user->userId, type, sessionId, channelId, messageId);
 }
 
 static void populateHandlers(DiscordEventHandlers* handlers)
@@ -168,11 +187,12 @@ static void populateHandlers(DiscordEventHandlers* handlers)
     handlers->ready = handleDiscordReady;
     handlers->disconnected = handleDiscordDisconnected;
     handlers->errored = handleDiscordError;
+    if (Debug)
+        handlers->debug = handleDebug;
     handlers->joinGame = handleDiscordJoin;
     handlers->spectateGame = handleDiscordSpectate;
     handlers->joinRequest = handleDiscordJoinRequest;
-    if (Debug)
-        handlers->debug = handleDebug;
+    handlers->invited = handleDiscordInvited;
 }
 
 static void discordUpdateHandlers()
