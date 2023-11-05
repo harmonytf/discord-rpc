@@ -224,14 +224,13 @@ inline JsonValue* GetObjMember(JsonValue* obj, const char* name)
     return nullptr;
 }
 
-inline JsonValue* GetArrMember(JsonValue* obj, const char* arrayName, int idx)
+inline JsonValue* GetArrMember(JsonValue* obj, const char* arrayName, unsigned int idx)
 {
     if (obj) {
         auto member = obj->FindMember(arrayName);
         if (member != obj->MemberEnd() && member->value.IsArray()) {
-            auto& arr = member->value.GetArray();
-            if (arr.Size() >= idx + 1) {
-                return &arr[idx];
+            if (member->value.GetArray().Size() >= idx + 1u) {
+                return &member->value.GetArray()[idx];
             }
         }
     }
