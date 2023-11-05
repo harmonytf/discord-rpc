@@ -75,10 +75,19 @@ static void updateDiscordPresence()
 
 static void handleDiscordReady(const DiscordUser* connectedUser)
 {
-    printf("\nDiscord: connected to user %s#%s - %s\n",
-           connectedUser->username,
-           connectedUser->discriminator,
-           connectedUser->userId);
+    if (!connectedUser->discriminator || strcmp(connectedUser->discriminator, "0") == 0) {
+        printf("\nDiscord: connected to user @%s (%s) - %s\n",
+               connectedUser->username,
+               connectedUser->globalName ? connectedUser->globalName : "",
+               connectedUser->userId);
+    }
+    else {
+        printf("\nDiscord: connected to user %s#%s (%s) - %s\n",
+               connectedUser->username,
+               connectedUser->discriminator,
+               connectedUser->globalName ? connectedUser->globalName : "",
+               connectedUser->userId);
+    }
 }
 
 static void handleDiscordDisconnected(int errcode, const char* message)

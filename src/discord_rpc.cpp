@@ -43,6 +43,9 @@ struct User {
     char username[344];
     // 4 decimal digits + 1 null terminator = 5
     char discriminator[8];
+    // 32 unicode glyphs is max name size => 4 bytes per glyph in the worst case, +1 for null
+    // terminator = 129 (TODO: is thhat correct?)
+    char globalName[344];
     // optional 'a_' + md5 hex digest (32 bytes) + null terminator = 35
     char avatar[128];
     // Rounded way up because I'm paranoid about games breaking from future changes in these sizes
@@ -204,6 +207,10 @@ static void Discord_UpdateConnection(void)
                         if (discriminator) {
                             StringCopy(joinReq->discriminator, discriminator);
                         }
+                        auto globalName = GetStrMember(user, "global_name");
+                        if (globalName) {
+                            StringCopy(joinReq->globalName, globalName);
+                        }
                         if (avatar) {
                             StringCopy(joinReq->avatar, avatar);
                         }
@@ -328,6 +335,10 @@ extern "C" DISCORD_EXPORT void Discord_Initialize(const char* applicationId,
             auto discriminator = GetStrMember(user, "discriminator");
             if (discriminator) {
                 StringCopy(connectedUser.discriminator, discriminator);
+            }
+            auto globalName = GetStrMember(user, "global_name");
+            if (globalName) {
+                StringCopy(connectedUser.globalName, globalName);
             }
             if (avatar) {
                 StringCopy(connectedUser.avatar, avatar);
@@ -479,6 +490,7 @@ extern "C" DISCORD_EXPORT void Discord_RunCallbacks(void)
             DiscordUser du{connectedUser.userId,
                            connectedUser.username,
                            connectedUser.discriminator,
+                           connectedUser.globalName,
                            connectedUser.avatar};
             Handlers.ready(&du);
         }
@@ -515,7 +527,8 @@ extern "C" DISCORD_EXPORT void Discord_RunCallbacks(void)
         {
             std::lock_guard<std::mutex> guard(HandlerMutex);
             if (Handlers.joinRequest) {
-                DiscordUser du{req->userId, req->username, req->discriminator, req->avatar};
+                DiscordUser du{
+                  req->userId, req->username, req->discriminator, req->globalName, req->avatar};
                 Handlers.joinRequest(&du);
             }
         }

@@ -52,6 +52,7 @@ typedef struct DiscordUser {
     const char* userId;
     const char* username;
     const char* discriminator;
+    const char* globalName;
     const char* avatar;
 } DiscordUser;
 
