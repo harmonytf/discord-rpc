@@ -285,18 +285,13 @@ static void Discord_UpdateConnection(void)
                             if (party) {
                                 StringCopyOptional(inviteReq->activity.partyId,
                                                    GetStrMember(party, "id"));
-                                auto size = GetArrMember(party, "size");
-                                if (size->Size() >= 1) {
-                                    auto& size0 = (*size)[0];
-                                    if (size0.IsInt()) {
-                                        inviteReq->activity.partySize = size0.GetInt();
-                                    }
+                                auto* size0 = GetArrMember(party, "size", 0);
+                                if (size0 && size0->IsInt()) {
+                                    inviteReq->activity.partySize = size0->GetInt();
                                 }
-                                if (size->Size() >= 2) {
-                                    auto& size1 = (*size)[1];
-                                    if (size1.IsInt()) {
-                                        inviteReq->activity.partyMax = size1.GetInt();
-                                    }
+                                auto* size1 = GetArrMember(party, "size", 1);
+                                if (size1 && size1->IsInt()) {
+                                    inviteReq->activity.partyMax = size1->GetInt();
                                 }
                             }
                         }
@@ -652,7 +647,13 @@ extern "C" DISCORD_EXPORT void Discord_RunCallbacks(void)
                                         a.smallImageText,
                                         a.partyId,
                                         a.partySize,
-                                        a.partyMax};
+                                        a.partyMax,
+                                        0,
+                                        nullptr,
+                                        nullptr,
+                                        nullptr,
+                                        0,
+                                        nullptr};
                 Handlers.invited(
                   req->type, &du, &drp, req->sessionId, req->channelId, req->messageId);
             }
