@@ -459,6 +459,7 @@ extern "C" DISCORD_EXPORT void Discord_Shutdown(void)
     }
     Connection->onConnect = nullptr;
     Connection->onDisconnect = nullptr;
+    Connection->onDebug = nullptr;
     Handlers = {};
     QueuedPresence.length = 0;
     UpdatePresence.exchange(false);
