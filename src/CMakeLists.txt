@@ -25,7 +25,9 @@ if (${BUILD_SHARED_LIBS})
     endif(WIN32)
 endif(${BUILD_SHARED_LIBS})
 
-add_definitions(-DRAPIDJSON_SSE2)
+if (NOT APPLE)
+    add_definitions(-DRAPIDJSON_SSE2)
+endif(NOT APPLE)
 
 if(WIN32)
     add_definitions(-DDISCORD_WINDOWS)
