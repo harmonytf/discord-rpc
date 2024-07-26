@@ -1,5 +1,3 @@
-include_directories(${PROJECT_SOURCE_DIR}/include)
-
 option(ENABLE_IO_THREAD "Start up a separate I/O thread, otherwise I'd need to call an update function" ON)
 option(USE_STATIC_CRT "Use /MT[d] for dynamic library" OFF)
 option(WARNINGS_AS_ERRORS "When enabled, compiles with `-Werror` (on *nix platforms)." OFF)
@@ -113,6 +111,8 @@ if(UNIX)
 endif(UNIX)
 
 target_include_directories(discord-rpc PRIVATE ${RAPIDJSON}/include)
+
+target_include_directories(discord-rpc PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>)
 
 if (NOT ${ENABLE_IO_THREAD})
     target_compile_definitions(discord-rpc PUBLIC -DDISCORD_DISABLE_IO_THREAD)
